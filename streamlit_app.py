@@ -6,6 +6,8 @@ import os
 import io
 import pandas as pd
 import time
+import urllib.request
+import shutil
 
 from model_utils import load_model, predict_and_explain, CLASS_NAMES
 from model_utils import load_model, predict_and_explain, CLASS_NAMES
@@ -19,6 +21,13 @@ with st.sidebar:
     model_path = st.text_input("Model path", value="models/best_model_finetuned.pth")
     device = st.selectbox("Device", options=["cpu", "cuda"], index=0)
     backend = st.selectbox("Model backend", options=["timm", "efficientnet_pytorch"], index=1)
+    # Optional URL to fetch the model if it's missing (useful on Streamlit Cloud)
+    default_url = ""
+    try:
+        default_url = st.secrets.get("MODEL_URL", "")
+    except Exception:
+        default_url = ""
+    model_url = st.text_input("Model URL (used if file missing)", value=default_url, help="Provide a direct download URL to the .pth file or set MODEL_URL in Secrets")
     target_layer_choice = st.selectbox("Target layer for Grad-CAM", options=["conv_head", "last_block"], index=1)
     st.markdown("---")
     st.markdown("Upload an image (PNG/JPG) or choose a sample from `data/train_images`.")
@@ -39,6 +48,22 @@ if sample_files:
 if uploaded is None and (not sample_choice or sample_choice == "—"):
     col1.info("Upload an image or pick a sample to enable prediction.")
 
+# Helper: download model file if missing (for cloud deploys)
+def _ensure_model_file(path: str, url: str | None = None):
+    if os.path.exists(path):
+        return True
+    if not url:
+        return False
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    try:
+        with st.spinner("Downloading model…"):
+            with urllib.request.urlopen(url, timeout=120) as r, open(path, "wb") as f:
+                shutil.copyfileobj(r, f)
+        return True
+    except Exception as e:
+        st.sidebar.error(f"Model download failed: {e}")
+        return False
+
 # Load model lazily
 @st.cache_resource(show_spinner=False)
 def _load(path, device_str, backend):
@@ -46,6 +71,9 @@ def _load(path, device_str, backend):
 
 model, model_device = None, None
 try:
+    # If model file missing (common on Streamlit Cloud), try to fetch it
+    if not os.path.exists(model_path):
+        _ = _ensure_model_file(model_path, model_url)
     model, model_device = _load(model_path, device, backend)
 except Exception as e:
     st.sidebar.error(f"Model load failed: {e}")
@@ -68,7 +96,8 @@ elif sample_choice and sample_choice != "—":
         col1.error(f"Could not open sample image: {e}")
 
 if image is not None:
-    col1.image(image, caption=image_name, use_column_width=True)
+    # use_column_width deprecated; replaced with use_container_width
+    col1.image(image, caption=image_name, use_container_width=True)
 
     if st.button("Predict & Explain"):
         if model is None:
@@ -98,9 +127,9 @@ if image is not None:
             st.subheader("Grad-CAM Explainability")
             col_a, col_b = st.columns(2)
             with col_a:
-                st.image(heatmap, caption="Heatmap", use_column_width=True)
+                st.image(heatmap, caption="Heatmap", use_container_width=True)
             with col_b:
-                st.image(overlay, caption="Overlay", use_column_width=True)
+                st.image(overlay, caption="Overlay", use_container_width=True)
 
             st.success("Done — inspect the prediction and the Grad-CAM overlay.")
 

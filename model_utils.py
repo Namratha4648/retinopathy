@@ -108,7 +108,8 @@ def predict_and_explain(pil_image: Image.Image, model, device, target_layer='las
 
     outputs, activations, gradients, fh, bh = _register_hooks_and_forward(model, input_tensor, target_layer)
 
-    probs = torch.softmax(outputs, dim=1).cpu().numpy()[0]
+    # Detach before converting to numpy to avoid RuntimeError about requiring grad
+    probs = torch.softmax(outputs, dim=1).detach().cpu().numpy()[0]
     pred = int(outputs.argmax(dim=1).item())
 
     # Backprop to get gradients
