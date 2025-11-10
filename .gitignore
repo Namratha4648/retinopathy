@@ -1,0 +1,67 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.Python
+
+# IPython / Jupyter
+.ipynb_checkpoints
+
+# Pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# PyTorch / model checkpoints
+*.pt
+*.pth
+*.ckpt
+models/*.pth
+models/*.pt
+
+# Results, outputs, overlays
+results_plots/
+models/overlays/
+
+# Streamlit
+.streamlit/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs / editors
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Environment / secrets
+.env
+secrets.toml
+
+# Ignore compiled python files
+*.pyc
+
+# Optional: ignore data images if you don't want to commit large binaries
+# Uncomment to ignore train/test image folders
+# data/train_images/
+# data/test_images/
